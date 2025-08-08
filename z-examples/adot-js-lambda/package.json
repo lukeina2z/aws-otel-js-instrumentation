@@ -1,0 +1,39 @@
+{
+  "name": "mylambdafn01",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "debug": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.740.0",
+    "@aws/aws-distro-opentelemetry-node-autoinstrumentation": "file:../../aws-distro-opentelemetry-node-autoinstrumentation",
+    "@opentelemetry/api": "file:../../../opentelemetry-js/api",
+    "@opentelemetry/core": "file:../../../opentelemetry-js/packages/opentelemetry-core",
+    "@opentelemetry/api-logs": "^0.203.0",
+    "@opentelemetry/auto-instrumentations-node": "file:../../../opentelemetry-js-contrib/packages/auto-instrumentations-node",
+
+
+    
+    "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.203.0",
+    "@opentelemetry/instrumentation": "file:../../../opentelemetry-js/experimental/packages/opentelemetry-instrumentation",
+    "@opentelemetry/instrumentation-http": "^0.203.0",
+    "@opentelemetry/instrumentation-winston": "^0.48.0",
+    "@opentelemetry/resources": "^2.0.1",
+    "@opentelemetry/sdk-node": "^0.203.0",
+    "@opentelemetry/sdk-trace-node": "^2.0.1",
+    "@opentelemetry/semantic-conventions": "^1.36.0",
+
+
+
+    "@opentelemetry/winston-transport": "^0.14.0",
+    "pino": "^9.7.0",
+    "winston": "^3.17.0"
+  }
+}
