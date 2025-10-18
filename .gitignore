@@ -5,5 +5,6 @@ aws-distro-opentelemetry-node-autoinstrumentation/coverage/
 aws-distro-opentelemetry-node-autoinstrumentation/src/version.ts
 
 # Other
+.DS_Store
 .git/
 *.nyc_output/
