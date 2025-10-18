@@ -3,7 +3,6 @@
 
 import { Attributes, HrTime, ROOT_CONTEXT, createContextKey } from '@opentelemetry/api';
 import { LoggerProvider } from '@opentelemetry/sdk-logs';
-import { EventLoggerProvider } from '@opentelemetry/sdk-events';
 import { Event } from '@opentelemetry/api-events';
 import { ReadableSpan, TimedEvent } from '@opentelemetry/sdk-trace-base';
 import { AnyValue } from '@opentelemetry/api-logs';
@@ -150,7 +149,6 @@ export const LLO_PATTERNS: { [key: string]: PatternConfig } = {
  */
 export class LLOHandler {
   private loggerProvider: LoggerProvider;
-  private eventLoggerProvider: EventLoggerProvider;
   private exactMatchPatterns: Set<string>;
   private regexPatterns: Array<[RegExp, string, PatternConfig]>;
   private patternConfigs: { [key: string]: PatternConfig };
@@ -158,14 +156,13 @@ export class LLOHandler {
   /**
    * Initialize an LLOHandler with the specified logger provider.
    *
-   * This constructor sets up the event logger provider and compiles patterns
+   * This constructor sets up the logger provider and compiles patterns
    * from the pattern registry for efficient matching.
    *
    * @param loggerProvider The OpenTelemetry LoggerProvider used for emitting events.
    */
   constructor(loggerProvider: LoggerProvider) {
     this.loggerProvider = loggerProvider;
-    this.eventLoggerProvider = new EventLoggerProvider(this.loggerProvider);
 
     this.exactMatchPatterns = new Set();
     this.regexPatterns = [];
@@ -377,7 +374,7 @@ export class LLOHandler {
 
     // Create and emit the event
     const timestamp = eventTimestamp || span.endTime;
-    const eventLogger = this.eventLoggerProvider.getEventLogger(span.instrumentationLibrary.name);
+    const logger = this.loggerProvider.getLogger(span.instrumentationScope.name);
 
     // Hack - Workaround to add a custom-made Context to an Event so that the emitted event log
     // has the correct associated traceId, spanId, flag. This is needed because a ReadableSpan only
@@ -391,13 +388,12 @@ export class LLOHandler {
     // - https://github.com/open-telemetry/opentelemetry-js/blob/experimental/v0.57.1/experimental/packages/sdk-logs/src/LogRecord.ts#L101
     // - https://github.com/open-telemetry/opentelemetry-js/blob/experimental/v0.57.1/api/src/trace/context-utils.ts#L78-L85
     //
-    // We could omit the context field which is optional, but then the OTel EventLogger will assign
+    // We could omit the context field which is optional, but then the OTel Logger will assign
     // the same `context.active()` and its associated SpanContext to each span from processSpans(),
     // which would be incorrect since each span should have their own Context with unique SpanContext.
-    // - https://github.com/open-telemetry/opentelemetry-js/blob/experimental/v0.57.1/experimental/packages/sdk-events/src/EventLogger.ts#L34
     const customContext = ROOT_CONTEXT.setValue(OTEL_SPAN_KEY, span);
     const event: Event = {
-      name: span.instrumentationLibrary.name,
+      name: span.instrumentationScope.name,
       timestamp: timestamp,
       data: eventBody,
       context: customContext,
@@ -409,7 +405,7 @@ export class LLOHandler {
       };
     }
 
-    eventLogger.emit(event);
+    logger.emit(event);
   }
 
   /**

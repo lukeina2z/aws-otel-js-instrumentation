@@ -1,10 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+const { emptyResource, resourceFromAttributes } = require('@opentelemetry/resources');
+
 import { AttributeValue, Attributes, Link, SpanContext, SpanKind, SpanStatus } from '@opentelemetry/api';
-import { InstrumentationLibrary } from '@opentelemetry/core';
+import { InstrumentationScope } from '@opentelemetry/core';
 import { OTLPTraceExporter as OTLPHttpTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
 import { ReadableSpan, SpanExporter, TimedEvent } from '@opentelemetry/sdk-trace-base';
 import { MESSAGINGOPERATIONVALUES_PROCESS, SEMATTRS_MESSAGING_OPERATION } from '@opentelemetry/semantic-conventions';
 import expect from 'expect';
@@ -26,7 +27,7 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
   const CONTAINS_NO_ATTRIBUTES: boolean = false;
 
   // Tests can safely rely on an empty resource.
-  const testResource: Resource = Resource.empty();
+  const testResource: ReturnType<typeof emptyResource> = emptyResource();
 
   // Mocks required for tests.
   let generatorMock: MetricAttributeGenerator;
@@ -222,15 +223,20 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
     (spanDataMock as any).spanContext = spanContextMock;
     expect(exportedSpan.spanContext).toEqual(spanContextMock);
 
-    (spanDataMock as any).parentSpanId = '0000000000000003';
-    expect(exportedSpan.parentSpanId).toEqual(spanDataMock.parentSpanId);
+    const parentSpanContext: SpanContext = {
+      traceId: '00000000000000000000000000000001',
+      spanId: '0000000000000003',
+      traceFlags: 0,
+    };
+    (spanDataMock as any).parentSpanContext = parentSpanContext;
+    expect(exportedSpan.parentSpanContext).toEqual(parentSpanContext);
 
     (spanDataMock as any).resource = testResource;
     expect(exportedSpan.resource).toEqual(testResource);
 
-    const testInstrumentationLibrary: InstrumentationLibrary = { name: 'mockedLibrary' };
-    (spanDataMock as any).instrumentationLibrary = testInstrumentationLibrary;
-    expect(exportedSpan.instrumentationLibrary).toEqual(testInstrumentationLibrary);
+    const testInstrumentationScope: InstrumentationScope = { name: 'mockedLibrary' };
+    (spanDataMock as any).instrumentationScope = testInstrumentationScope;
+    expect(exportedSpan.instrumentationScope).toEqual(testInstrumentationScope);
 
     const testName: string = 'name';
     (spanDataMock as any).name = testName;
@@ -289,7 +295,7 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
     const spanDataMock: ReadableSpan = createReadableSpanMock();
     (spanDataMock as any).attributes = { ...spanAttributes };
     (spanDataMock as any).kind = SpanKind.PRODUCER;
-    (spanDataMock as any).parentSpanId = undefined;
+    (spanDataMock as any).parentSpanContext = undefined;
 
     // Create mock for the generateMetricAttributeMapFromSpan. Returns both dependency and service
     // metric
@@ -303,7 +309,10 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
     };
     attributeMap[DEPENDENCY_METRIC] = dependencyMetricAttributes;
 
-    generatorMock.generateMetricAttributeMapFromSpan = (span: ReadableSpan, resource: Resource) => {
+    generatorMock.generateMetricAttributeMapFromSpan = (
+      span: ReadableSpan,
+      resource: ReturnType<typeof emptyResource>
+    ) => {
       if (spanDataMock === span && testResource === resource) {
         return attributeMap;
       }
@@ -363,7 +372,10 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
     const dependencyAttributesMock: Attributes = {};
     attributeMap[DEPENDENCY_METRIC] = dependencyAttributesMock;
     // Configure generated attributes
-    generatorMock.generateMetricAttributeMapFromSpan = (span: ReadableSpan, resource: Resource) => {
+    generatorMock.generateMetricAttributeMapFromSpan = (
+      span: ReadableSpan,
+      resource: ReturnType<typeof emptyResource>
+    ) => {
       if (spanDataMock === span && testResource === resource) {
         return attributeMap;
       }
@@ -400,7 +412,10 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
       [DEPENDENCY_METRIC]: metricAttributes,
     };
 
-    generatorMock.generateMetricAttributeMapFromSpan = (span: ReadableSpan, resource: Resource) => {
+    generatorMock.generateMetricAttributeMapFromSpan = (
+      span: ReadableSpan,
+      resource: ReturnType<typeof emptyResource>
+    ) => {
       if (spanDataMock === span && testResource === resource) {
         return attributeMap;
       }
@@ -467,8 +482,8 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
       events: [],
       duration: [0, 1],
       ended: true,
-      resource: new Resource({}),
-      instrumentationLibrary: { name: 'mockedLibrary' },
+      resource: resourceFromAttributes({}),
+      instrumentationScope: { name: 'mockedLibrary' },
       droppedAttributesCount: 0,
       droppedEventsCount: 0,
       droppedLinksCount: 0,
@@ -489,7 +504,10 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
     }
 
     // Configure generated attributes
-    generatorMock.generateMetricAttributeMapFromSpan = (span: ReadableSpan, resource: Resource) => {
+    generatorMock.generateMetricAttributeMapFromSpan = (
+      span: ReadableSpan,
+      resource: ReturnType<typeof emptyResource>
+    ) => {
       if (span === spanDataMock && resource === testResource) {
         return attributeMap;
       }
@@ -513,7 +531,7 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
       }
       attributeMapList.push(attributeMap);
     });
-    function sideEffect(span: ReadableSpan, resource: Resource) {
+    function sideEffect(span: ReadableSpan, resource: ReturnType<typeof emptyResource>) {
       const index: number = spanDataMocks.indexOf(span);
       if (index > -1 && resource === testResource) {
         return attributeMapList[index];
@@ -543,8 +561,8 @@ describe('AwsMetricAttributesSpanExporterTest', () => {
       events: [],
       duration: [0, 1],
       ended: true,
-      resource: new Resource({}),
-      instrumentationLibrary: { name: 'mockedLibrary' },
+      resource: resourceFromAttributes({}),
+      instrumentationScope: { name: 'mockedLibrary' },
       droppedAttributesCount: 0,
       droppedEventsCount: 0,
       droppedLinksCount: 0,

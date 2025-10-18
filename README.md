@@ -14,6 +14,12 @@ can be exported in a variety of formats. In addition, the agent and exporter can
 command line arguments or environment variables. The net result is the ability to gather telemetry
 data from a NodeJS application without any code changes.
 
+## Upstream Dependency
+
+| Open Telemetry API | Core  | Instrumentations |
+|--------------------|-------|------------------|
+| 1.9.0              | 2.0.1 | 0.203.0          |
+
 ## Getting Started
 
 The official AWS Documentation for getting started with ADOT JS Auto-Instrumentation is under construction.

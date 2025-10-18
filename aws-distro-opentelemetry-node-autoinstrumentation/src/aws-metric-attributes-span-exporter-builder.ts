@@ -9,14 +9,16 @@ import { MetricAttributeGenerator } from './metric-attribute-generator';
 
 export class AwsMetricAttributesSpanExporterBuilder {
   // Defaults
-  private static DEFAULT_GENERATOR: MetricAttributeGenerator = new AwsMetricAttributeGenerator();
+  private static getDefaultGenerator(): MetricAttributeGenerator {
+    return new AwsMetricAttributeGenerator();
+  }
 
   // Required builder elements
   private delegate: SpanExporter;
   private resource: Resource;
 
   // Optional builder elements
-  private generator: MetricAttributeGenerator = AwsMetricAttributesSpanExporterBuilder.DEFAULT_GENERATOR;
+  private generator: MetricAttributeGenerator = AwsMetricAttributesSpanExporterBuilder.getDefaultGenerator();
 
   public static create(delegate: SpanExporter, resource: Resource): AwsMetricAttributesSpanExporterBuilder {
     return new AwsMetricAttributesSpanExporterBuilder(delegate, resource);

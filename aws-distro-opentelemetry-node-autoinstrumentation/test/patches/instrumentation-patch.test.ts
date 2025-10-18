@@ -38,7 +38,8 @@ import { AWSXRAY_TRACE_ID_HEADER, AWSXRayPropagator } from '@opentelemetry/propa
 import { Context } from 'aws-lambda';
 import { Lambda } from '@aws-sdk/client-lambda';
 import * as nock from 'nock';
-import { ReadableSpan, Span as SDKSpan } from '@opentelemetry/sdk-trace-base';
+import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+const { Span: SDKSpan } = require('@opentelemetry/sdk-trace-base');
 import { getTestSpans } from '@opentelemetry/contrib-test-utils';
 import { instrumentationConfigs } from '../../src/register';
 import { LoggerProvider } from '@opentelemetry/api-logs';
@@ -712,7 +713,8 @@ describe('InstrumentationPatchTest', () => {
           return this;
         };
 
-        const mockSpan = sinon.createStubInstance(SDKSpan);
+        const mockSpan: any = sinon.createStubInstance(SDKSpan);
+        mockSpan.setAttribute = sinon.stub();
         const ctx = trace.setSpan(NoOpContext, mockSpan as unknown as Span);
 
         sinon.stub(otelContext, 'active').returns(ctx);
@@ -809,7 +811,7 @@ describe('InstrumentationPatchTest', () => {
 
       nock(`https://lambda.${region}.amazonaws.com`)
         .post(`/2015-03-31/functions/${dummyFunctionName}/invocations`)
-        .reply(200, function (uri: any, requestBody: any) {
+        .reply(200, function (this: any, uri: any, requestBody: any) {
           reqHeaders = this.req.headers;
           return 'null';
         });
@@ -820,7 +822,7 @@ describe('InstrumentationPatchTest', () => {
         })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'dummy-function-name Invoke';
       });
@@ -1266,7 +1268,7 @@ describe('AWS Lambda Instrumentation Propagation', () => {
     expect(spans.length).toBe(1);
     const [span] = spans;
     expect(span.spanContext().traceId).toBe(sampledGenericSpanContext.traceId);
-    expect(span.parentSpanId).toBe(sampledGenericSpanContext.spanId);
+    expect((span as any).parentSpanId).toBe(sampledGenericSpanContext.spanId);
   });
 
   it('Prioritizes X-Ray Trace ID from Lambda Context over W3C Header', async () => {
@@ -1285,7 +1287,7 @@ describe('AWS Lambda Instrumentation Propagation', () => {
     expect(spans.length).toBe(1);
     const [span] = spans;
     expect(span.spanContext().traceId).toBe(sampledAwsSpanContext.traceId);
-    expect(span.parentSpanId).toBe(sampledAwsSpanContext.spanId);
+    expect((span as any).parentSpanId).toBe(sampledAwsSpanContext.spanId);
   });
 
   it('Prioritizes X-Ray Trace ID from Lambda Context over X-Ray Trace ID from Lambda Event headers', async () => {
@@ -1312,6 +1314,6 @@ describe('AWS Lambda Instrumentation Propagation', () => {
     expect(spans.length).toBe(1);
     const [span] = spans;
     expect(span.spanContext().traceId).toBe(sampledAwsSpanContext2.traceId);
-    expect(span.parentSpanId).toBe(sampledAwsSpanContext2.spanId);
+    expect((span as any).parentSpanId).toBe(sampledAwsSpanContext2.spanId);
   });
 });

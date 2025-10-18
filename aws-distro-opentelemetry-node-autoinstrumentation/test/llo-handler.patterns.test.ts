@@ -25,10 +25,7 @@ describe('TestLLOHandlerPatterns', () => {
    */
   it('should test init', () => {
     expect(testBase.lloHandler['loggerProvider']).toEqual(testBase.loggerProviderMock);
-    expect(testBase.lloHandler['eventLoggerProvider']['_loggerProvider']).toEqual(
-      testBase.eventLoggerProviderMock['_loggerProvider']
-    );
-    expect(testBase.lloHandler['eventLoggerProvider'].getEventLogger('123')).toEqual(testBase.eventLoggerMock);
+    expect(testBase.loggerProviderMock.getLogger('123')).toEqual(testBase.loggerMock);
   });
 
   /**

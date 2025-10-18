@@ -1,9 +1,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+const { emptyResource, defaultResource } = require('@opentelemetry/resources');
+
 import { AttributeValue, Attributes, SpanContext, SpanKind } from '@opentelemetry/api';
-import { InstrumentationLibrary } from '@opentelemetry/core';
-import { Resource } from '@opentelemetry/resources';
+import { InstrumentationScope } from '@opentelemetry/core';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import {
   MESSAGINGOPERATIONVALUES_PROCESS,
@@ -68,15 +69,15 @@ const GENERATOR: AwsMetricAttributeGenerator = new AwsMetricAttributeGenerator()
 
 let attributesMock: Attributes;
 let spanDataMock: ReadableSpan;
-let instrumentationLibraryMock: InstrumentationLibrary;
-let resource: Resource;
+let instrumentationScopeMock: InstrumentationScope;
+let resource: ReturnType<typeof emptyResource>;
 
 /** Unit tests for {@link AwsMetricAttributeGenerator}. */
 describe('AwsMetricAttributeGeneratorTest', () => {
   // setUpMocks
   beforeEach(() => {
     attributesMock = {};
-    instrumentationLibraryMock = {
+    instrumentationScopeMock = {
       name: 'Scope name',
     };
     spanDataMock = {
@@ -90,7 +91,11 @@ describe('AwsMetricAttributeGeneratorTest', () => {
         };
         return spanContext;
       },
-      parentSpanId: '0000000000000007',
+      parentSpanContext: {
+        traceId: '00000000000000000000000000000001',
+        spanId: '0000000000000007',
+        traceFlags: 0,
+      },
       startTime: [0, 0],
       endTime: [0, 1],
       status: { code: 0 },
@@ -99,8 +104,8 @@ describe('AwsMetricAttributeGeneratorTest', () => {
       events: [],
       duration: [0, 1],
       ended: true,
-      resource: Resource.default(),
-      instrumentationLibrary: instrumentationLibraryMock,
+      resource: defaultResource(),
+      instrumentationScope: instrumentationScopeMock,
       droppedAttributesCount: 0,
       droppedEventsCount: 0,
       droppedLinksCount: 0,
@@ -108,14 +113,14 @@ describe('AwsMetricAttributeGeneratorTest', () => {
     // Divergence from Java/Python - set AWS_IS_LOCAL_ROOT as false because parentSpanContext is valid and not remote in this test
     attributesMock[AWS_ATTRIBUTE_KEYS.AWS_IS_LOCAL_ROOT] = false;
 
-    // OTel strongly recommends to start out with the default instead of Resource.empty()
+    // OTel strongly recommends to start out with the default instead of emptyResource()
     // In OTel JS, default Resource's default Service Name is `unknown_service:${process.argv0}`
     // - https://github.com/open-telemetry/opentelemetry-js/blob/b2778e1b2ff7b038cebf371f1eb9f808fd98107f/packages/opentelemetry-resources/src/platform/node/default-service-name.ts#L16
-    resource = Resource.default();
+    resource = defaultResource();
   });
 
   it('testSpanAttributesForEmptyResource', () => {
-    resource = Resource.empty();
+    resource = emptyResource();
     const expectedAttributes: Attributes = {
       [AWS_ATTRIBUTE_KEYS.AWS_SPAN_KIND]: SpanKind[SpanKind.SERVER],
       [AWS_ATTRIBUTE_KEYS.AWS_LOCAL_SERVICE]: UNKNOWN_SERVICE,

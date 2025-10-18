@@ -42,7 +42,7 @@ describe('SFN', () => {
           console.log(err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getStateMachineAttributeSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'SFN.DescribeStateMachine';
       });
@@ -73,7 +73,7 @@ describe('SFN', () => {
           console.log(err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getActivityAttributeSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'SFN.DescribeActivity';
       });

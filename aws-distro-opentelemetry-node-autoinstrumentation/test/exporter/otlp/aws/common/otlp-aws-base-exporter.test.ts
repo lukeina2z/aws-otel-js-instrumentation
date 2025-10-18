@@ -97,7 +97,7 @@ export abstract class OTLPAwsBaseExporterTest {
         expect(result.error?.message).toBe(undefined);
       })
       .then(() => {
-        this.scope.on('request', (req, interceptor, body) => {
+        this.scope.on('request', (req: any, interceptor: any, body: any) => {
           this.assertHeaders(req.headers);
           expect(req.headers).not.toHaveProperty('content-encoding');
           done();
@@ -117,7 +117,7 @@ export abstract class OTLPAwsBaseExporterTest {
         expect(result.error?.message).toBe(undefined);
       })
       .then(() => {
-        this.scope.on('request', (req, interceptor, body) => {
+        this.scope.on('request', (req: any, interceptor: any, body: any) => {
           this.assertHeaders(req.headers);
           expect(req.headers['content-encoding']).toBe('gzip');
 
@@ -150,7 +150,7 @@ export abstract class OTLPAwsBaseExporterTest {
         expect(gzipStub.callCount).toBe(1);
       })
       .then(() => {
-        this.scope.on('request', (req, interceptor, body) => {
+        this.scope.on('request', (req: any, interceptor: any, body: any) => {
           this.assertHeaders(req.headers);
           expect(req.headers['content-encoding']).toBe('gzip');
           done();

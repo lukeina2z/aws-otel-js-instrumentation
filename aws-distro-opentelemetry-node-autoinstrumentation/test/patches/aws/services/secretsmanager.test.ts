@@ -45,7 +45,7 @@ describe('SecretsManager', () => {
           })
           .catch((err: any) => {});
 
-        const testSpans: ReadableSpan[] = getTestSpans();
+        const testSpans: ReadableSpan[] = getTestSpans() as any;
         const getDescribeSecretSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
           return s.name === 'SecretsManager.DescribeSecret';
         });
@@ -81,7 +81,7 @@ describe('SecretsManager', () => {
           console.log(err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getSecretValueSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'SecretsManager.GetSecretValue';
       });

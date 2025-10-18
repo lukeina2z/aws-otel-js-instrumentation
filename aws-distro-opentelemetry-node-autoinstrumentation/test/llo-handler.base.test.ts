@@ -1,33 +1,29 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+const { resourceFromAttributes } = require('@opentelemetry/resources');
+
 import { LoggerProvider } from '@opentelemetry/sdk-logs';
-import { EventLogger, EventLoggerProvider } from '@opentelemetry/sdk-events';
+import { Logger } from '@opentelemetry/api-logs';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import { Attributes, SpanContext, SpanKind, TraceFlags } from '@opentelemetry/api';
 import { LLOHandler } from '../src/llo-handler';
 import * as sinon from 'sinon';
-import { Resource } from '@opentelemetry/resources';
-import { EventLoggerOptions } from '@opentelemetry/api-events';
 
 // Class with utilities for LLO Handler tests
 export class LLOHandlerTestBase {
   public loggerProviderMock: LoggerProvider;
-  public eventLoggerMock: EventLogger;
-  public eventLoggerProviderMock: EventLoggerProvider;
+  public loggerMock: Logger;
   public lloHandler: LLOHandler;
 
   constructor() {
     this.loggerProviderMock = sinon.createStubInstance(LoggerProvider);
     this.lloHandler = new LLOHandler(this.loggerProviderMock);
-    this.eventLoggerProviderMock = sinon.stub(this.lloHandler['eventLoggerProvider']);
-    this.eventLoggerMock = sinon.createStubInstance(EventLogger);
-    this.eventLoggerProviderMock.getEventLogger = (
-      name: string,
-      version?: string | undefined,
-      options?: EventLoggerOptions | undefined
-    ) => {
-      return this.eventLoggerMock;
+    this.loggerMock = {
+      emit: sinon.stub(),
+    } as unknown as Logger;
+    this.loggerProviderMock.getLogger = (name: string, version?: string | undefined, options?: any) => {
+      return this.loggerMock;
     };
   }
 
@@ -50,8 +46,8 @@ export class LLOHandlerTestBase {
       events: [],
       duration: [0, 1],
       ended: true,
-      instrumentationLibrary: { name: 'mockedLibrary', version: '1.0.0' },
-      resource: new Resource({}),
+      instrumentationScope: { name: 'mockedLibrary', version: '1.0.0' },
+      resource: resourceFromAttributes({}),
       droppedAttributesCount: 0,
       droppedEventsCount: 0,
       droppedLinksCount: 0,

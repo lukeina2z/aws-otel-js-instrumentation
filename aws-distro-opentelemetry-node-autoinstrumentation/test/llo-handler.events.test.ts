@@ -44,12 +44,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
 
     expect(emittedEvent.name).toBe('test.scope');
     expect(emittedEvent.timestamp).toEqual(span.endTime);
@@ -108,12 +108,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.multi.framework', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.multi.framework', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
 
     expect(emittedEvent.name).toBe('test.multi.framework');
     expect(emittedEvent.timestamp).toEqual(span.endTime);
@@ -156,11 +156,11 @@ describe('TestLLOHandlerEvents', () => {
     };
 
     const span = testBase.createMockSpan(attributes);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.notCalled((testBase.eventLoggerMock as any).emit);
+    sinon.assert.notCalled((testBase.loggerMock as any).emit);
   });
 
   /**
@@ -180,12 +180,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
 
     const eventBody = emittedEvent.data as any;
     expect(eventBody.input).toBeDefined();
@@ -216,14 +216,14 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     const eventTimestamp: HrTime = [9999999999, 0];
 
     testBase.lloHandler['emitLloAttributes'](span, attributes, eventTimestamp);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
     expect(emittedEvent.timestamp).toEqual(eventTimestamp);
   });
 
@@ -232,11 +232,11 @@ describe('TestLLOHandlerEvents', () => {
    */
   it('should handle null attributes in emitLloAttributes', () => {
     const span = testBase.createMockSpan({});
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, null as any);
 
-    sinon.assert.notCalled(testBase.eventLoggerMock.emit as any);
+    sinon.assert.notCalled(testBase.loggerMock.emit as any);
   });
 
   /**
@@ -264,13 +264,13 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
     // Verify event was emitted
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
     const eventBody = emittedEvent.data as any;
 
     // Check input messages
@@ -308,7 +308,7 @@ describe('TestLLOHandlerEvents', () => {
     };
 
     const span = testBase.createMockSpan(attributes);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     // Mock collectAllLloMessages to return an empty array
     const collectAllLloMessagesSpy = sinon.stub(testBase.lloHandler as any, 'collectAllLloMessages').returns([]);
@@ -316,7 +316,7 @@ describe('TestLLOHandlerEvents', () => {
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
     // Should not emit event when no messages collected
-    sinon.assert.notCalled(testBase.eventLoggerMock.emit as any);
+    sinon.assert.notCalled(testBase.loggerMock.emit as any);
 
     collectAllLloMessagesSpy.restore();
   });
@@ -334,12 +334,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
     const eventBody = emittedEvent.data as any;
 
     expect(eventBody.input).toBeDefined();
@@ -361,12 +361,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
     const eventBody = emittedEvent.data as any;
 
     expect(eventBody).not.toHaveProperty('input');
@@ -386,12 +386,12 @@ describe('TestLLOHandlerEvents', () => {
       'gen_ai.prompt.0.role': 'user',
     };
     const span = testBase.createMockSpan(attributes);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
     // Event should still be emitted as we have a message (even with empty content)
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
   });
 
   /**
@@ -469,12 +469,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
     const eventBody = emittedEvent.data as any;
 
     // Check that llm.prompts is in input section
@@ -520,7 +520,7 @@ describe('TestLLOHandlerEvents', () => {
     const span = testBase.createMockSpan(spanAttributes);
     testBase.updateMockSpanKey(span, 'events', [promptEvent, completionEvent]);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', {
+    testBase.updateMockSpanKey(span, 'instrumentationScope', {
       name: 'openlit.otel.tracing',
       version: '1.0.0',
     } as InstrumentationScope);
@@ -532,8 +532,8 @@ describe('TestLLOHandlerEvents', () => {
     testBase.lloHandler['emitLloAttributes'](span, allLloAttrs);
 
     // Verify single event was emitted with both input and output
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
     const eventBody = emittedEvent.data as any;
 
     // Both input and output should be in the same event
@@ -565,12 +565,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
 
     // Verify session.id was copied to event attributes
     expect(emittedEvent.attributes).toBeDefined();
@@ -593,12 +593,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
 
     // Verify session.id is not in event attributes (because the event doesn't have attributes)
     expect(emittedEvent.attributes).toBeUndefined();
@@ -619,12 +619,12 @@ describe('TestLLOHandlerEvents', () => {
 
     const span = testBase.createMockSpan(attributes);
     testBase.updateMockSpanKey(span, 'endTime', [1234567899, 0]);
-    testBase.updateMockSpanKey(span, 'instrumentationLibrary', { name: 'test.scope', version: '1.0.0' });
+    testBase.updateMockSpanKey(span, 'instrumentationScope', { name: 'test.scope', version: '1.0.0' });
 
     testBase.lloHandler['emitLloAttributes'](span, attributes);
 
-    sinon.assert.calledOnce(testBase.eventLoggerMock.emit as any);
-    const emittedEvent = (testBase.eventLoggerMock.emit as any).getCall(0).args[0] as Event;
+    sinon.assert.calledOnce(testBase.loggerMock.emit as any);
+    const emittedEvent = (testBase.loggerMock.emit as any).getCall(0).args[0] as Event;
 
     // Verify only session.id was copied to event attributes (plus event.name from Event class)
     expect(emittedEvent.attributes).toBeDefined();

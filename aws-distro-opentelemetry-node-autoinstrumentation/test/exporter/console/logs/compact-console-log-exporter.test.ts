@@ -1,11 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+const { emptyResource } = require('@opentelemetry/resources');
+
 import { expect } from 'expect';
 import * as sinon from 'sinon';
 import { ExportResultCode } from '@opentelemetry/core';
 import { ReadableLogRecord } from '@opentelemetry/sdk-logs';
-import { Resource } from '@opentelemetry/resources';
 import { CompactConsoleLogRecordExporter } from '../../../../src/exporter/console/logs/compact-console-log-exporter';
 import { Attributes } from '@opentelemetry/api';
 
@@ -19,7 +20,7 @@ describe('CompactConsoleLogRecordExporter', () => {
     body,
     severityText: 'INFO',
     attributes,
-    resource: Resource.empty(),
+    resource: emptyResource(),
     instrumentationScope: { name: 'test', version: '1.0.0' },
     droppedAttributesCount: 0,
   });

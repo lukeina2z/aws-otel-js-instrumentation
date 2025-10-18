@@ -13,7 +13,7 @@ if (process.env.OTEL_TRACES_SAMPLER === 'xray') {
   useXraySampler = true;
 }
 
-import { diag, DiagConsoleLogger, metrics, trace } from '@opentelemetry/api';
+import { diag, DiagConsoleLogger, DiagLogLevel, metrics, trace } from '@opentelemetry/api';
 import { logs } from '@opentelemetry/api-logs';
 import { getNodeAutoInstrumentations, InstrumentationConfigMap } from '@opentelemetry/auto-instrumentations-node';
 import { Instrumentation } from '@opentelemetry/instrumentation';
@@ -22,7 +22,10 @@ import { AwsOpentelemetryConfigurator } from './aws-opentelemetry-configurator';
 import { applyInstrumentationPatches, customExtractor } from './patches/instrumentation-patch';
 import { getAwsRegionFromEnvironment, isAgentObservabilityEnabled } from './utils';
 
-diag.setLogger(new DiagConsoleLogger(), opentelemetry.core.getEnv().OTEL_LOG_LEVEL);
+// Parse OTEL_LOG_LEVEL from environment
+const logLevelStr = process.env.OTEL_LOG_LEVEL?.toUpperCase() || 'INFO';
+const logLevel = DiagLogLevel[logLevelStr as keyof typeof DiagLogLevel] ?? DiagLogLevel.INFO;
+diag.setLogger(new DiagConsoleLogger(), logLevel);
 
 /*
 Sets up default environment variables and apply patches

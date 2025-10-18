@@ -5,7 +5,7 @@
 import { TextMapPropagator, diag } from '@opentelemetry/api';
 import { getPropagator } from '@opentelemetry/auto-configuration-propagators';
 import { getResourceDetectors as getResourceDetectorsFromEnv } from '@opentelemetry/auto-instrumentations-node';
-import { ENVIRONMENT, TracesSamplerValues, getEnv, getEnvWithoutDefaults } from '@opentelemetry/core';
+import { resourceFromAttributes, emptyResource } from '@opentelemetry/resources';
 import { OTLPMetricExporter as OTLPGrpcOTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import {
@@ -22,23 +22,14 @@ import { ZipkinExporter } from '@opentelemetry/exporter-zipkin';
 import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { Instrumentation } from '@opentelemetry/instrumentation';
 import { awsEc2DetectorSync, awsEcsDetectorSync, awsEksDetectorSync } from '@opentelemetry/resource-detector-aws';
+import { envDetector, hostDetector, processDetector } from '@opentelemetry/resources';
 import {
-  Detector,
-  DetectorSync,
-  Resource,
-  ResourceDetectionConfig,
-  detectResourcesSync,
-  envDetectorSync,
-  hostDetector,
-  processDetector,
-} from '@opentelemetry/resources';
-import {
-  Aggregation,
   AggregationSelector,
   InstrumentType,
   MeterProvider,
   PeriodicExportingMetricReader,
   PushMetricExporter,
+  AggregationType,
 } from '@opentelemetry/sdk-metrics';
 import { NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import {
@@ -86,6 +77,27 @@ import { CompactConsoleLogRecordExporter } from './exporter/console/logs/compact
 const AWS_TRACES_OTLP_ENDPOINT_PATTERN = '^https://xray\\.([a-z0-9-]+)\\.amazonaws\\.com/v1/traces$';
 const AWS_LOGS_OTLP_ENDPOINT_PATTERN = '^https://logs\\.([a-z0-9-]+)\\.amazonaws\\.com/v1/logs$';
 
+// Helper functions for environment access
+function getEnv() {
+  return {
+    OTEL_TRACES_SAMPLER: process.env.OTEL_TRACES_SAMPLER || 'parentbased_always_on',
+    OTEL_TRACES_SAMPLER_ARG: process.env.OTEL_TRACES_SAMPLER_ARG || '',
+    OTEL_TRACES_EXPORTER: process.env.OTEL_TRACES_EXPORTER || '',
+    OTEL_EXPORTER_OTLP_PROTOCOL: process.env.OTEL_EXPORTER_OTLP_PROTOCOL || 'http/protobuf',
+    OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL || '',
+  };
+}
+
+function getEnvWithoutDefaults() {
+  return {
+    OTEL_TRACES_SAMPLER: process.env.OTEL_TRACES_SAMPLER,
+    OTEL_TRACES_SAMPLER_ARG: process.env.OTEL_TRACES_SAMPLER_ARG,
+    OTEL_TRACES_EXPORTER: process.env.OTEL_TRACES_EXPORTER,
+    OTEL_EXPORTER_OTLP_PROTOCOL: process.env.OTEL_EXPORTER_OTLP_PROTOCOL,
+    OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,
+  };
+}
+
 const APPLICATION_SIGNALS_ENABLED_CONFIG: string = 'OTEL_AWS_APPLICATION_SIGNALS_ENABLED';
 const APPLICATION_SIGNALS_EXPORTER_ENDPOINT_CONFIG: string = 'OTEL_AWS_APPLICATION_SIGNALS_EXPORTER_ENDPOINT';
 const METRIC_EXPORT_INTERVAL_CONFIG: string = 'OTEL_METRIC_EXPORT_INTERVAL';
@@ -125,7 +137,7 @@ interface OtlpLogHeaderSetting {
  *  OTEL_AWS_APPLICATION_SIGNALS_ENABLED. This flag is disabled by default.
  */
 export class AwsOpentelemetryConfigurator {
-  private resource: Resource;
+  private resource: any;
   private instrumentations: Instrumentation[];
   private idGenerator: IdGenerator;
   private sampler: Sampler;
@@ -155,13 +167,13 @@ export class AwsOpentelemetryConfigurator {
      * detection in the SDK, the AWS processors/exporters/samplers will lack such detected
      * resources in their respective resources.
      */
-    let autoResource: Resource = new Resource({});
+    let autoResource: any = emptyResource();
     autoResource = this.customizeVersions(autoResource);
 
     // The following if/else block is based on upstream's logic
     // https://github.com/open-telemetry/opentelemetry-js/blob/95edbd9992434f31f50532fedb3c7e8db5164479/experimental/packages/opentelemetry-sdk-node/src/sdk.ts#L125-L129
-    // In all cases, we want to include the Env Detector (Sync) and the AWS Resource Detectors
-    let defaultDetectors: (Detector | DetectorSync)[] = [];
+    // In all cases, we want to include the Env Detector and the AWS Resource Detectors
+    let defaultDetectors: any[] = [];
     if (process.env.OTEL_NODE_RESOURCE_DETECTORS != null) {
       defaultDetectors = getResourceDetectorsFromEnv();
       // Add Env/AWS Resource Detectors if not present
@@ -170,18 +182,17 @@ export class AwsOpentelemetryConfigurator {
         defaultDetectors.push(awsEc2DetectorSync, awsEcsDetectorSync, awsEksDetectorSync);
       }
       if (!resourceDetectorsFromEnv.includes('env')) {
-        defaultDetectors.push(envDetectorSync);
+        defaultDetectors.push(envDetector);
       }
     } else if (isLambdaEnvironment() || isAgentObservabilityEnabled()) {
       // Only keep env detector here
-      defaultDetectors.push(envDetectorSync);
+      defaultDetectors.push(envDetector);
     } else {
       /*
-       * envDetectorSync is used as opposed to envDetector (async), so it is guaranteed that the
-       * resource is populated with configured OTEL_RESOURCE_ATTRIBUTES or OTEL_SERVICE_NAME env
+       * envDetector is used to populate the resource with configured OTEL_RESOURCE_ATTRIBUTES or OTEL_SERVICE_NAME env
        * var values by the time that this class provides a configuration to the OTel SDK.
        *
-       * envDetectorSync needs to be last so it can override any conflicting resource attributes.
+       * envDetector needs to be last so it can override any conflicting resource attributes.
        */
       defaultDetectors = [
         processDetector,
@@ -189,15 +200,30 @@ export class AwsOpentelemetryConfigurator {
         awsEc2DetectorSync,
         awsEcsDetectorSync,
         awsEksDetectorSync,
-        envDetectorSync,
+        envDetector,
       ];
     }
 
-    const internalConfig: ResourceDetectionConfig = {
+    const internalConfig: any = {
       detectors: defaultDetectors,
     };
 
-    autoResource = this.customizeResource(autoResource.merge(detectResourcesSync(internalConfig)));
+    // Use merge with empty resource since detectResources is async and constructor must be sync
+    // Detectors will run synchronously where possible
+    let detectedResource = emptyResource();
+    for (const detector of defaultDetectors) {
+      try {
+        const resource = (detector as any).detect ? (detector as any).detect(internalConfig) : emptyResource();
+        if (resource instanceof Promise) {
+          // Skip async detectors in constructor
+          continue;
+        }
+        detectedResource = detectedResource.merge(resource);
+      } catch (e) {
+        // Skip failed detectors
+      }
+    }
+    autoResource = this.customizeResource(autoResource.merge(detectedResource));
     this.resource = autoResource;
 
     this.instrumentations = instrumentations;
@@ -222,22 +248,24 @@ export class AwsOpentelemetryConfigurator {
     this.customizeMetricReader(isEmfEnabled);
   }
 
-  private customizeVersions(autoResource: Resource): Resource {
-    // eslint-disable-next-line @typescript-eslint/typedef
+  private customizeVersions(autoResource: any): any {
     const DISTRO_VERSION: string = LIB_VERSION;
-    autoResource.attributes[SEMRESATTRS_TELEMETRY_AUTO_VERSION] = DISTRO_VERSION + '-aws';
+    const versionResource = resourceFromAttributes({
+      [SEMRESATTRS_TELEMETRY_AUTO_VERSION]: DISTRO_VERSION + '-aws',
+    });
+    autoResource = autoResource.merge(versionResource);
     diag.debug(
       `@aws/aws-distro-opentelemetry-node-autoinstrumentation - version: ${autoResource.attributes[SEMRESATTRS_TELEMETRY_AUTO_VERSION]}`
     );
     return autoResource;
   }
 
-  private customizeResource(resource: Resource) {
+  private customizeResource(resource: any) {
     if (isAgentObservabilityEnabled()) {
       // Add aws.service.type if it doesn't exist in the resource
       if (!resource.attributes[AWS_ATTRIBUTE_KEYS.AWS_SERVICE_TYPE]) {
         // Set a default agent type for AI agent observability
-        resource.attributes[AWS_ATTRIBUTE_KEYS.AWS_SERVICE_TYPE] = 'gen_ai_agent';
+        return resource.merge(resourceFromAttributes({ [AWS_ATTRIBUTE_KEYS.AWS_SERVICE_TYPE]: 'gen_ai_agent' }));
       }
     }
     return resource;
@@ -293,7 +321,7 @@ export class AwsOpentelemetryConfigurator {
     return exportIntervalMillis;
   }
 
-  static exportUnsampledSpanForAgentObservability(spanProcessors: SpanProcessor[], resource: Resource): void {
+  static exportUnsampledSpanForAgentObservability(spanProcessors: SpanProcessor[], resource: any): void {
     if (!isAgentObservabilityEnabled()) {
       return;
     }
@@ -319,7 +347,7 @@ export class AwsOpentelemetryConfigurator {
     spanProcessors.push(new AwsBatchUnsampledSpanProcessor(spanExporter));
   }
 
-  static customizeSpanProcessors(spanProcessors: SpanProcessor[], resource: Resource): void {
+  static customizeSpanProcessors(spanProcessors: SpanProcessor[], resource: any): void {
     if (isAgentObservabilityEnabled()) {
       // We always send 100% spans to Genesis platform for agent observability because
       // AI applications typically have low throughput traffic patterns and require
@@ -332,7 +360,7 @@ export class AwsOpentelemetryConfigurator {
       const sessionIdPredicate = (baggageKey: string) => {
         return baggageKey === 'session.id';
       };
-      spanProcessors.push(new BaggageSpanProcessor(sessionIdPredicate));
+      spanProcessors.push(new BaggageSpanProcessor(sessionIdPredicate) as any);
     }
 
     if (!AwsOpentelemetryConfigurator.isApplicationSignalsEnabled()) {
@@ -406,7 +434,7 @@ export class AwsOpentelemetryConfigurator {
   }
 }
 
-export function customBuildSamplerFromEnv(resource: Resource, useXraySampler: boolean = false): Sampler {
+export function customBuildSamplerFromEnv(resource: any, useXraySampler: boolean = false): Sampler {
   if (useXraySampler || process.env.OTEL_TRACES_SAMPLER === 'xray') {
     const samplerArgumentEnv: string | undefined = process.env.OTEL_TRACES_SAMPLER_ARG;
     let endpoint: string | undefined = undefined;
@@ -495,10 +523,10 @@ export class ApplicationSignalsExporterProvider {
   private aggregationSelector: AggregationSelector = (instrumentType: InstrumentType) => {
     switch (instrumentType) {
       case InstrumentType.HISTOGRAM: {
-        return Aggregation.ExponentialHistogram();
+        return { type: AggregationType.EXPONENTIAL_HISTOGRAM };
       }
     }
-    return Aggregation.Default();
+    return { type: AggregationType.DEFAULT };
   };
 }
 
@@ -706,7 +734,7 @@ export class AwsLoggerProcessorProvider {
 export class AwsSpanProcessorProvider {
   private _configuredExporters: SpanExporter[] = [];
   private _spanProcessors: SpanProcessor[] = [];
-  private resource: Resource;
+  private resource: any;
 
   static configureOtlp(): SpanExporter {
     const otlpExporterTracesEndpoint = process.env['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'];
@@ -745,7 +773,6 @@ export class AwsSpanProcessorProvider {
   }
 
   static getOtlpProtocol(): string {
-    // eslint-disable-next-line @typescript-eslint/typedef
     const parsedEnvValues = getEnvWithoutDefaults();
 
     return (
@@ -778,10 +805,9 @@ export class AwsSpanProcessorProvider {
     ['console', () => new ConsoleSpanExporter()],
   ]);
 
-  public constructor(resource: Resource) {
+  public constructor(resource: any) {
     this.resource = resource;
 
-    // eslint-disable-next-line @typescript-eslint/typedef
     let traceExportersList = this.filterBlanksAndNulls(Array.from(new Set(getEnv().OTEL_TRACES_EXPORTER.split(','))));
 
     if (traceExportersList[0] === 'none') {
@@ -842,7 +868,7 @@ export class AwsSpanProcessorProvider {
     return list.map(item => item.trim()).filter(s => s !== 'null' && s !== '');
   }
 
-  public static customizeSpanExporter(spanExporter: SpanExporter, resource: Resource): SpanExporter {
+  public static customizeSpanExporter(spanExporter: SpanExporter, resource: any): SpanExporter {
     if (AwsOpentelemetryConfigurator.isApplicationSignalsEnabled()) {
       return AwsMetricAttributesSpanExporterBuilder.create(spanExporter, resource).build();
     }
@@ -867,42 +893,44 @@ export class AwsSpanProcessorProvider {
 // An alternative method is to instantiate a new OTel JS Tracer with an empty config, which
 // would also have the (private+readonly) sampler from the `buildSamplerFromEnv()` method.
 // https://github.com/open-telemetry/opentelemetry-js/blob/01cea7caeb130142cc017f77ea74834a35d0e8d6/packages/opentelemetry-sdk-trace-base/src/Tracer.ts#L36-L53
-const FALLBACK_OTEL_TRACES_SAMPLER: string = TracesSamplerValues.AlwaysOn;
+function getFallbackSampler(): string {
+  return 'parentbased_always_on';
+}
 const DEFAULT_RATIO: number = 1;
 
 /**
  * Based on environment, builds a sampler, complies with specification.
  * @param environment optional, by default uses getEnv(), but allows passing a value to reuse parsed environment
  */
-export function buildSamplerFromEnv(environment: Required<ENVIRONMENT> = getEnv()): Sampler {
-  switch (environment.OTEL_TRACES_SAMPLER) {
-    case TracesSamplerValues.AlwaysOn:
+export function buildSamplerFromEnv(environment: Required<any> = getEnv()): Sampler {
+  // OTel v2 removed TracesSamplerValues enum, use string constants directly
+  const sampler = environment.OTEL_TRACES_SAMPLER;
+  switch (sampler) {
+    case 'always_on':
       return new AlwaysOnSampler();
-    case TracesSamplerValues.AlwaysOff:
+    case 'always_off':
       return new AlwaysOffSampler();
-    case TracesSamplerValues.ParentBasedAlwaysOn:
+    case 'parentbased_always_on':
       return new ParentBasedSampler({
         root: new AlwaysOnSampler(),
       });
-    case TracesSamplerValues.ParentBasedAlwaysOff:
+    case 'parentbased_always_off':
       return new ParentBasedSampler({
         root: new AlwaysOffSampler(),
       });
-    case TracesSamplerValues.TraceIdRatio:
+    case 'traceidratio':
       return new TraceIdRatioBasedSampler(getSamplerProbabilityFromEnv(environment));
-    case TracesSamplerValues.ParentBasedTraceIdRatio:
+    case 'parentbased_traceidratio':
       return new ParentBasedSampler({
         root: new TraceIdRatioBasedSampler(getSamplerProbabilityFromEnv(environment)),
       });
     default:
-      diag.error(
-        `OTEL_TRACES_SAMPLER value "${environment.OTEL_TRACES_SAMPLER} invalid, defaulting to ${FALLBACK_OTEL_TRACES_SAMPLER}".`
-      );
+      diag.error(`OTEL_TRACES_SAMPLER value "${sampler} invalid, defaulting to ${getFallbackSampler()}".`);
       return new AlwaysOnSampler();
   }
 }
 
-function getSamplerProbabilityFromEnv(environment: Required<ENVIRONMENT>): number | undefined {
+function getSamplerProbabilityFromEnv(environment: Required<any>): number | undefined {
   if (environment.OTEL_TRACES_SAMPLER_ARG === undefined || environment.OTEL_TRACES_SAMPLER_ARG === '') {
     diag.error(`OTEL_TRACES_SAMPLER_ARG is blank, defaulting to ${DEFAULT_RATIO}.`);
     return DEFAULT_RATIO;

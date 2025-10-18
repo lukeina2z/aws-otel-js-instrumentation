@@ -293,7 +293,7 @@ describe('TestCloudWatchLogsClient', () => {
     logClient['eventBatch'] = logClient['createEventBatch']();
     logClient['eventBatch'].addEvent({ message: 'test', timestamp: Date.now() }, 10);
 
-    const sendLogBatchStub = sinon.stub(logClient, <any>'sendLogBatch').resolves();
+    const sendLogBatchStub = sinon.stub(logClient, 'sendLogBatch' as any).resolves();
 
     await logClient.flushPendingEvents();
 
@@ -334,8 +334,8 @@ describe('TestCloudWatchLogsClient', () => {
     mockPutLogEvents.onSecondCall().resolves({ nextSequenceToken: '12345' });
 
     // Mock the create methods
-    const mockCreateLogGroup = sinon.stub(logClient, <any>'ensureLogGroupExists').resolves();
-    const mockCreateLogStream = sinon.stub(logClient, <any>'ensureLogStreamExists').resolves();
+    const mockCreateLogGroup = sinon.stub(logClient, 'ensureLogGroupExists' as any).resolves();
+    const mockCreateLogStream = sinon.stub(logClient, 'ensureLogStreamExists' as any).resolves();
 
     // Should not raise an exception and should create resources
     await logClient['sendLogBatch'](batch);
@@ -585,7 +585,7 @@ describe('TestCloudWatchLogsClient', () => {
   it('TestSendLogEventExceptionHandling', async () => {
     /* Test exception handling in sendLogEvent. */
     // Mock validateLogEvent to raise an exception
-    sinon.stub(logClient, <any>'validateLogEvent').throws(new Error('Test error'));
+    sinon.stub(logClient, 'validateLogEvent' as any).throws(new Error('Test error'));
 
     const logEvent = { message: 'test', timestamp: Date.now() };
 
@@ -597,7 +597,7 @@ describe('TestCloudWatchLogsClient', () => {
     // Ensure no batch exists
     logClient['eventBatch'] = undefined;
 
-    const mockSendLogBatch = sinon.stub(logClient, <any>'sendLogBatch').resolves();
+    const mockSendLogBatch = sinon.stub(logClient, 'sendLogBatch' as any).resolves();
 
     await logClient.flushPendingEvents();
 

@@ -3,10 +3,10 @@
 
 import { Attributes, diag, HrTime } from '@opentelemetry/api';
 import {
-  Aggregation,
   AggregationSelector,
   AggregationTemporality,
   AggregationTemporalitySelector,
+  AggregationType,
   DataPoint,
   DataPointType,
   ExponentialHistogram,
@@ -159,10 +159,10 @@ export abstract class EMFExporterBase implements PushMetricExporter {
       this.aggregationSelector = (instrumentType: InstrumentType) => {
         switch (instrumentType) {
           case InstrumentType.HISTOGRAM: {
-            return Aggregation.ExponentialHistogram();
+            return { type: AggregationType.EXPONENTIAL_HISTOGRAM };
           }
         }
-        return Aggregation.Default();
+        return { type: AggregationType.DEFAULT };
       };
     }
   }
@@ -615,7 +615,7 @@ export abstract class EMFExporterBase implements PushMetricExporter {
     return this.aggregationTemporalitySelector(instrumentType);
   }
 
-  selectAggregation(instrumentType: InstrumentType): Aggregation {
+  selectAggregation(instrumentType: InstrumentType): any {
     return this.aggregationSelector(instrumentType);
   }
 }

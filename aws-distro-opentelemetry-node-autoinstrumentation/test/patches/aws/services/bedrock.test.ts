@@ -41,7 +41,7 @@ describe('BedrockAgent', () => {
 
       await bedrock.getPrompt({ promptIdentifier: dummyPromptName }).catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getPromptSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockAgent.GetPrompt';
       });
@@ -69,7 +69,7 @@ describe('BedrockAgent', () => {
 
       await bedrock.getAgent({ agentId: dummyAgentId }).catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getAgentSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockAgent.GetAgent';
       });
@@ -92,7 +92,7 @@ describe('BedrockAgent', () => {
 
       await bedrock.getKnowledgeBase({ knowledgeBaseId: dummyKnowledgeBaseId }).catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getKnowledgeBaseSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockAgent.GetKnowledgeBase';
       });
@@ -120,7 +120,7 @@ describe('BedrockAgent', () => {
         .getDataSource({ dataSourceId: dummyDataSourceId, knowledgeBaseId: dummyKnowledgeBaseId })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getDataSourceSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockAgent.GetDataSource';
       });
@@ -165,7 +165,7 @@ describe('BedrockAgentRuntime', () => {
         })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const retrieveSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockAgentRuntime.Retrieve';
       });
@@ -200,7 +200,7 @@ describe('BedrockAgentRuntime', () => {
         })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeAgentSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockAgentRuntime.InvokeAgent';
       });
@@ -242,7 +242,7 @@ describe('Bedrock', () => {
         })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const getGuardrailSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'Bedrock.GetGuardrail';
       });
@@ -318,7 +318,7 @@ describe('BedrockRuntime', () => {
           console.log('error', err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -371,7 +371,7 @@ describe('BedrockRuntime', () => {
         })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -427,7 +427,7 @@ describe('BedrockRuntime', () => {
         })
         .catch((err: any) => {});
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -489,7 +489,7 @@ describe('BedrockRuntime', () => {
           console.log('error', err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -547,7 +547,7 @@ describe('BedrockRuntime', () => {
           console.log('error', err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -601,7 +601,7 @@ describe('BedrockRuntime', () => {
           console.log('error', err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -655,7 +655,7 @@ describe('BedrockRuntime', () => {
           console.log('error', err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -717,7 +717,7 @@ describe('BedrockRuntime', () => {
           console.log('error', err);
         });
 
-      const testSpans: ReadableSpan[] = getTestSpans();
+      const testSpans: ReadableSpan[] = getTestSpans() as any;
       const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
         return s.name === 'BedrockRuntime.InvokeModel';
       });
@@ -763,7 +763,7 @@ describe('BedrockRuntime', () => {
           })
           .catch((err: any) => {});
 
-        const testSpans: ReadableSpan[] = getTestSpans();
+        const testSpans: ReadableSpan[] = getTestSpans() as any;
         const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
           return s.name === 'BedrockRuntime.InvokeModel';
         });
@@ -794,7 +794,7 @@ describe('BedrockRuntime', () => {
           body: mockRequestBody,
         });
 
-        const testSpans: ReadableSpan[] = getTestSpans();
+        const testSpans: ReadableSpan[] = getTestSpans() as any;
         const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
           return s.name === 'BedrockRuntime.InvokeModel';
         });
@@ -836,7 +836,7 @@ describe('BedrockRuntime', () => {
           body: mockRequestBody,
         });
 
-        const testSpans: ReadableSpan[] = getTestSpans();
+        const testSpans: ReadableSpan[] = getTestSpans() as any;
         const invokeModelSpans: ReadableSpan[] = testSpans.filter((s: ReadableSpan) => {
           return s.name === 'BedrockRuntime.InvokeModelWithResponseStream';
         });

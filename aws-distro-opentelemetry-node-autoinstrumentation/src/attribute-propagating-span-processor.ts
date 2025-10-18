@@ -55,25 +55,23 @@ export class AttributePropagatingSpanProcessor implements SpanProcessor {
     const parentSpan: APISpan | undefined = trace.getSpan(parentContext);
     let parentReadableSpan: Span | undefined = undefined;
 
-    // In Python and Java, the check is "parentSpan is an instance of ReadableSpan" is not possible
-    // in TypeScript because the check is not allowed for TypeScript interfaces (such as ReadableSpan).
-    // This is because JavaScript doesn't support interfaces, which is what TypeScript will compile to.
-    // `Span` is the only class that implements ReadableSpan, so check for instance of Span.
-    if (parentSpan instanceof Span) {
-      parentReadableSpan = parentSpan;
+    // Check if parentSpan is a ReadableSpan by checking for required properties
+    // In v2, we can't use instanceof Span, so we check for ReadableSpan properties
+    if (parentSpan && 'kind' in parentSpan && 'attributes' in parentSpan) {
+      parentReadableSpan = parentSpan as any;
 
       // Add the AWS_SDK_DESCENDANT attribute to the immediate child spans of AWS SDK span.
       // This attribute helps the backend differentiate between SDK spans and their immediate
       // children.
       // It's assumed that the HTTP spans are immediate children of the AWS SDK span
       // TODO: we should have a contract test to check the immediate children are HTTP span
-      if (AwsSpanProcessingUtil.isAwsSDKSpan(parentReadableSpan)) {
+      if (AwsSpanProcessingUtil.isAwsSDKSpan(parentReadableSpan!)) {
         span.setAttribute(AWS_ATTRIBUTE_KEYS.AWS_SDK_DESCENDANT, 'true');
       }
 
-      if (SpanKind.INTERNAL === parentReadableSpan.kind) {
+      if (SpanKind.INTERNAL === parentReadableSpan!.kind) {
         for (const keyToPropagate of this.attributesKeysToPropagate) {
-          const valueToPropagate: AttributeValue | undefined = parentReadableSpan.attributes[keyToPropagate];
+          const valueToPropagate: AttributeValue | undefined = parentReadableSpan!.attributes[keyToPropagate];
           if (valueToPropagate !== undefined) {
             span.setAttribute(keyToPropagate, valueToPropagate);
           }
@@ -83,16 +81,16 @@ export class AttributePropagatingSpanProcessor implements SpanProcessor {
       // We cannot guarantee that messaging.operation is set onStart, it could be set after the fact.
       // To work around this, add the AWS_CONSUMER_PARENT_SPAN_KIND attribute if parent and child are
       // both CONSUMER then check later if a metric should be generated.
-      if (this.isConsumerKind(span) && this.isConsumerKind(parentReadableSpan)) {
-        span.setAttribute(AWS_ATTRIBUTE_KEYS.AWS_CONSUMER_PARENT_SPAN_KIND, SpanKind[parentReadableSpan.kind]);
+      if (this.isConsumerKind(span) && this.isConsumerKind(parentReadableSpan!)) {
+        span.setAttribute(AWS_ATTRIBUTE_KEYS.AWS_CONSUMER_PARENT_SPAN_KIND, SpanKind[parentReadableSpan!.kind]);
       }
 
       // If parent span contains "cloud.resource_id" or "faas.id" but not in child span, child span will be
       // propagated with one of these attribute from parent. "cloud.resource_id" takes priority if it exists
-      const parentResourceId = AwsSpanProcessingUtil.getResourceId(parentSpan);
+      const parentResourceId = AwsSpanProcessingUtil.getResourceId(parentReadableSpan!);
       const resourceId = AwsSpanProcessingUtil.getResourceId(span);
       if (!resourceId && parentResourceId) {
-        if (AwsSpanProcessingUtil.isKeyPresent(parentSpan, AwsSpanProcessingUtil.CLOUD_RESOURCE_ID)) {
+        if (AwsSpanProcessingUtil.isKeyPresent(parentReadableSpan!, AwsSpanProcessingUtil.CLOUD_RESOURCE_ID)) {
           span.setAttribute(AwsSpanProcessingUtil.CLOUD_RESOURCE_ID, parentResourceId);
         } else {
           span.setAttribute(SEMRESATTRS_FAAS_ID, parentResourceId);

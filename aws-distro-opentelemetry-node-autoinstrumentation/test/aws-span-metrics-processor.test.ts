@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+const { emptyResource, resourceFromAttributes } = require('@opentelemetry/resources');
+
 import {
   Attributes,
   Context,
@@ -14,8 +16,7 @@ import {
   TraceFlags,
   isSpanContextValid,
 } from '@opentelemetry/api';
-import { InstrumentationLibrary, hrTimeDuration } from '@opentelemetry/core';
-import { Resource } from '@opentelemetry/resources';
+import { InstrumentationScope, hrTimeDuration } from '@opentelemetry/core';
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { ReadableSpan, Span } from '@opentelemetry/sdk-trace-base';
 import { SEMATTRS_HTTP_STATUS_CODE } from '@opentelemetry/semantic-conventions';
@@ -46,14 +47,15 @@ describe('AwsSpanMetricsProcessorTest', () => {
   const TEST_LATENCY_NANOS: number = 150_000_000;
 
   // Resource is not mockable, but tests can safely rely on an empty resource.
-  const testResource: Resource = Resource.empty();
+  const testResource: ReturnType<typeof emptyResource> = emptyResource();
 
   // Useful enum for indicating expected HTTP status code-related metrics
-  enum ExpectedStatusMetric {
-    ERROR,
-    FAULT,
-    NEITHER,
-  }
+  const ExpectedStatusMetric = {
+    ERROR: 0,
+    FAULT: 1,
+    NEITHER: 2,
+  } as const;
+  type ExpectedStatusMetric = (typeof ExpectedStatusMetric)[keyof typeof ExpectedStatusMetric];
 
   // Mocks required for tests.
   let errorHistogramMock: Histogram;
@@ -119,7 +121,7 @@ describe('AwsSpanMetricsProcessorTest', () => {
       parentContextMock,
       'deleteValue'
     );
-    const spanMock: Span = sinon.createStubInstance(Span);
+    const spanMock = {} as Span;
 
     awsSpanMetricsProcessor.onStart(spanMock, parentContextMock);
     sinon.assert.notCalled(parentContextMockGetValue);
@@ -450,7 +452,7 @@ describe('AwsSpanMetricsProcessorTest', () => {
     parentSpanContext: SpanContext | undefined = undefined,
     statusData: SpanStatus = { code: SpanStatusCode.UNSET }
   ): ReadableSpan {
-    const awsSdkInstrumentationLibrary: InstrumentationLibrary = {
+    const awsSdkInstrumentationScope: InstrumentationScope = {
       name: '@opentelemetry/instrumentation-aws-sdk',
     };
 
@@ -482,9 +484,9 @@ describe('AwsSpanMetricsProcessorTest', () => {
       events: [],
       duration: duration,
       ended: true,
-      resource: new Resource({}),
+      resource: resourceFromAttributes({}),
       // Configure Instrumentation Library
-      instrumentationLibrary: awsSdkInstrumentationLibrary,
+      instrumentationScope: awsSdkInstrumentationScope,
       droppedAttributesCount: 0,
       droppedEventsCount: 0,
       droppedLinksCount: 0,
@@ -493,12 +495,12 @@ describe('AwsSpanMetricsProcessorTest', () => {
     if (parentSpanContext === undefined) {
       parentSpanContext = INVALID_SPAN_CONTEXT;
     } else {
-      (mockSpanData as any).parentSpanId = parentSpanContext.spanId;
+      (mockSpanData as any).parentSpanContext = parentSpanContext;
     }
     const isParentSpanContextValid: boolean = parentSpanContext !== undefined && isSpanContextValid(parentSpanContext);
     const isParentSpanRemote: boolean = parentSpanContext !== undefined && parentSpanContext.isRemote === true;
     const isLocalRoot: boolean =
-      mockSpanData.parentSpanId === undefined || !isParentSpanContextValid || isParentSpanRemote;
+      mockSpanData.parentSpanContext === undefined || !isParentSpanContextValid || isParentSpanRemote;
     mockSpanData.attributes[AWS_ATTRIBUTE_KEYS.AWS_IS_LOCAL_ROOT] = isLocalRoot;
 
     return mockSpanData;
@@ -506,7 +508,10 @@ describe('AwsSpanMetricsProcessorTest', () => {
 
   function configureMocksForOnEnd(readableSpanMock: ReadableSpan, metricAttributesMap: AttributeMap): void {
     // Configure generated attributes
-    generatorMock.generateMetricAttributeMapFromSpan = (span: ReadableSpan, resource: Resource) => {
+    generatorMock.generateMetricAttributeMapFromSpan = (
+      span: ReadableSpan,
+      resource: ReturnType<typeof emptyResource>
+    ) => {
       if (readableSpanMock === span && testResource === resource) {
         return metricAttributesMap;
       }
